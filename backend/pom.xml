@@ -62,6 +62,12 @@
             <version>2.3.35</version>
             <scope>test</scope>
         </dependency>
+        <!-- MyBatis-Plus 分页插件 -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-jsqlparser</artifactId>
+            <version>3.5.17</version>
+        </dependency>
 
     </dependencies>
 
