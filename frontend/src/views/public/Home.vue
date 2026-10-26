@@ -35,7 +35,7 @@
     </section>
 
     <section class="charts-section" aria-labelledby="chart-title">
-      <div class="section-heading"><div><span class="section-kicker">数据观察</span><h2 id="chart-title">公开溯源数据分布</h2><p>以下图表不使用模拟数据；暂无已发布批次时如实显示空状态</p></div></div>
+      <div class="section-heading"><div><span class="section-kicker">数据观察</span><h2 id="chart-title">公开溯源数据分布</h2><p>当前展示数据为开发测试所用的模拟记录</p></div></div>
       <div class="chart-grid">
         <article class="chart-card"><div class="card-heading"><h3>近六个月公开批次</h3><span>按首次发布时间统计</span></div><div v-if="trendTotal===0" class="empty-chart">暂无公开批次趋势数据</div><div v-show="trendTotal>0" ref="trendChart" class="chart-body" aria-label="近六个月公开批次柱状图"></div></article>
         <article class="chart-card"><div class="card-heading"><h3>农产品分类分布</h3><span>已公开批次所属分类</span></div><div v-if="categories.length===0" class="empty-chart">暂无已公开的产品分类数据</div><div v-show="categories.length>0" ref="categoryChart" class="chart-body" aria-label="公开批次分类柱状图"></div></article>
