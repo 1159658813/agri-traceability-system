@@ -52,7 +52,18 @@
   </div>
 </template>
 <script>
-import * as echarts from 'echarts';
+
+import * as echarts from 'echarts/core';
+import { BarChart } from 'echarts/charts';
+import { GridComponent, TooltipComponent } from 'echarts/components';
+import { CanvasRenderer } from 'echarts/renderers';
+
+echarts.use([
+  BarChart,
+  GridComponent,
+  TooltipComponent,
+  CanvasRenderer
+]);
 import { getOverview, getTrend, getCategories, getNotices } from '../../api/public';
 const METRICS = [
   { key:'publishedBatches', title:'公开溯源批次', unit:'个批次', icon:'el-icon-tickets' },
