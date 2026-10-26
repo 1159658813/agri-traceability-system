@@ -2,15 +2,13 @@ import Vue from 'vue';
 import VueRouter from 'vue-router';
 import PublicLayout from '../layouts/PublicLayout.vue';
 import Home from '../views/public/Home.vue';
-import Search from '../views/public/Search.vue';
-import Notices from '../views/public/Notices.vue';
-import ComingSoon from '../views/public/ComingSoon.vue';
-
-// 保留之前的后台页面，仅用于本地开发；正式上线前必须由真实认证保护。
-import AppShell from '../components/AppShell.vue';
-import Dashboard from '../views/Dashboard.vue';
-import Bases from '../views/Bases.vue';
-import ModulePending from '../views/ModulePending.vue';
+const Search = () => import(/* webpackChunkName: "public-pages" */ '../views/public/Search.vue');
+const Notices = () => import(/* webpackChunkName: "public-pages" */ '../views/public/Notices.vue');
+const ComingSoon = () => import(/* webpackChunkName: "public-pages" */ '../views/public/ComingSoon.vue');
+const AppShell = () => import(/* webpackChunkName: "manage-pages" */ '../components/AppShell.vue');
+const Dashboard = () => import(/* webpackChunkName: "manage-pages" */ '../views/Dashboard.vue');
+const Bases = () => import(/* webpackChunkName: "manage-pages" */ '../views/Bases.vue');
+const ModulePending = () => import(/* webpackChunkName: "manage-pages" */ '../views/ModulePending.vue');
 
 Vue.use(VueRouter);
 
