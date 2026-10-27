@@ -30,7 +30,7 @@
           <div class="top-divider"></div>
           <div class="top-crumb">{{ currentTitle }}</div>
         </div>
-        <div class="top-right"><button class="back-to-site" @click="go('/')">返回公众首页</button><span class="environment"><span class="environment-dot"></span> 本地开发</span><span class="top-avatar">农</span></div>
+        <div class="top-right"><button class="back-to-site" @click="go('/')">返回公众首页</button><span class="environment"><span class="environment-dot"></span> <AccountGreeting />  本地开发</span><span class="top-avatar">农</span></div>
       </header>
       <main class="page-viewport"><router-view /></main>
       <footer class="global-footer"><span>田野档案 · 农产品产地溯源信息管理系统</span><span>已接入数据来自本地后端</span></footer>
@@ -38,6 +38,7 @@
   </div>
 </template>
 <script>
+import AccountGreeting from './AccountGreeting.vue';
 const MODULES = [
   { key: 'products', title: '农产品档案', icon: 'el-icon-collection' },
   { key: 'batches', title: '溯源批次', icon: 'el-icon-tickets' },
@@ -61,6 +62,9 @@ export default {
   watch: { '$route.path'() { this.menuOpen = false; } },
   methods: {
     go(path) { if (this.$route.path !== path) this.$router.push(path); this.menuOpen = false; }
+  },
+  components: {
+    AccountGreeting
   }
 };
 </script>

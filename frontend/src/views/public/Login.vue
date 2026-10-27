@@ -1,22 +1,20 @@
 <template>
   <div class="login-page">
     <div class="login-panel">
-      <div class="login-label">田野档案 · 后台访问</div>
+      <div class="login-label">田野档案 · 账号访问</div>
       <h1>账号登录</h1>
-      <p class="login-description">农户账号需完成入驻审核后才能启用。</p>
+      <p class="login-description">管理员和审核通过的农户均可使用已启用的账号登录。</p>
 
       <form @submit.prevent="submitLogin">
         <label for="login-username">账号</label>
         <input id="login-username" v-model.trim="username" type="text"
                autocomplete="username" maxlength="50" placeholder="请输入账号" required />
-
         <label for="login-password">密码</label>
         <input id="login-password" v-model="password" type="password"
                autocomplete="current-password" maxlength="128" placeholder="请输入密码" required />
-
         <p v-if="error" class="login-error" role="alert">{{ error }}</p>
         <button type="submit" :disabled="submitting">
-          {{ submitting ? '正在验证...' : '登录后台' }}
+          {{ submitting ? '正在验证...' : '登录工作台' }}
         </button>
       </form>
       <router-link class="login-back" to="/">返回公众首页</router-link>
@@ -28,12 +26,7 @@
 export default {
   name: 'LoginPage',
   data() {
-    return {
-      username: '',
-      password: '',
-      submitting: false,
-      error: ''
-    };
+    return { username: '', password: '', submitting: false, error: '' };
   },
   methods: {
     async submitLogin() {
@@ -52,17 +45,18 @@ export default {
           this.error = result.message || '登录失败，请检查账号密码';
           return;
         }
-        if (result.data.roleCode !== 'ADMIN') {
-          this.error = '农户工作台尚未开放，请使用管理员账号';
+        this.password = '';
+        const role = result.data.roleCode;
+        const home = role === 'ADMIN' ? '/manage' : role === 'FARMER' ? '/farmer' : null;
+        if (!home) {
+          this.error = '当前账号角色未开放';
           return;
         }
-        this.password = '';
         const redirect = this.$route.query.redirect;
-        const target = typeof redirect === 'string'
-          && (redirect === '/manage' || redirect.startsWith('/manage/'))
-          ? redirect : '/manage';
-        await this.$router.replace(target);
-      } catch (e) {
+        const allowed = typeof redirect === 'string' &&
+          (redirect === home || redirect.startsWith(`${home}/`));
+        await this.$router.replace(allowed ? redirect : home);
+      } catch (error) {
         this.error = '暂时无法连接服务器，请检查后端是否启动';
       } finally {
         this.submitting = false;

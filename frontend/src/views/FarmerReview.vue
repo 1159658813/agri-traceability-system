@@ -4,12 +4,12 @@
       <div>
         <p class="eyebrow">农户入驻 · 账号审核</p>
         <h1>入驻申请审核</h1>
-        <p class="description">查看申请状态并测试审核流程。目前仅允许处理明确标记的演示申请。</p>
+        <p class="description">查看申请状态并测试审核流程。管理员可查看演示申请及新提交的申请。</p>
       </div>
       <button class="refresh-button" type="button" @click="load">刷新列表</button>
     </header>
 
-    <div class="notice-bar">当前为开发测试环境，演示资料没有实际证明效力。真实资质上传与核验功能尚未上线。</div>
+    <div class="notice-bar">演示记录没有真实证明材料；新提交的文件需人工核验，系统不会自动判断证明材料真伪。</div>
 
     <div class="toolbar">
       <label for="review-status">申请状态</label>
@@ -43,16 +43,20 @@
           <div><dt>联系电话</dt><dd>{{ item.contactPhone }}</dd></div>
           <div><dt>种植地区</dt><dd>{{ item.farmingLocation }}</dd></div>
           <div><dt>提交时间</dt><dd>{{ formatDate(item.submittedAt) }}</dd></div>
-          <div><dt>资质材料</dt><dd>{{ item.demoProof ? '演示占位记录（无真实文件）' : '真实材料待接入核验' }}</dd></div>
+          <div><dt>资质材料</dt><dd><span v-if="item.demoProof">演示占位记录（无真实文件）</span>
+            <a v-else :href="`/api/admin/farmer-applications/${item.id}/proof`" class="proof-link">下载资料（管理员）</a></dd></div>
         </dl>
         <p v-if="item.applicationNote" class="application-note">申请说明：{{ item.applicationNote }}</p>
         <p v-if="item.reviewComment" class="application-note">审核意见：{{ item.reviewComment }}</p>
 
-        <div v-if="item.reviewStatus === 'PENDING' && item.demoProof" class="review-actions">
+        <div v-if="item.reviewStatus === 'PENDING'" class="review-actions">
           <template v-if="editingId === item.id">
             <label :for="`comment-${item.id}`">审核意见</label>
             <textarea :id="`comment-${item.id}`" v-model="comment" maxlength="500"
                       rows="3" placeholder="驳回申请时必须填写原因"></textarea>
+            <label v-if="!item.demoProof" class="proof-confirm">
+              <input v-model="proofChecked" type="checkbox" /> 我已核对附件内容并确认可以进行人工审核
+            </label>
             <div class="action-buttons">
               <button type="button" class="approve" :disabled="saving" @click="submit(item, 'APPROVED')">{{ saving ? '处理中...' : '通过申请' }}</button>
               <button type="button" class="reject" :disabled="saving" @click="submit(item, 'REJECTED')">驳回申请</button>
@@ -61,7 +65,6 @@
           </template>
           <button v-else type="button" class="review-button" @click="startReview(item)">处理这条申请</button>
         </div>
-        <p v-else-if="item.reviewStatus === 'PENDING'" class="hint">真实资料审核暂未开放</p>
       </article>
     </div>
 
@@ -90,7 +93,8 @@ export default {
       saving: false,
       error: '',
       editingId: null,
-      comment: ''
+      comment: '',
+      proofChecked: false
     };
   },
   computed: {
@@ -129,15 +133,20 @@ export default {
     startReview(item) {
       this.editingId = item.id;
       this.comment = '';
+      this.proofChecked = false;
       this.error = '';
     },
     async submit(item, decision) {
       if (this.saving) return;
+      if (!item.demoProof && !this.proofChecked) {
+        this.error = '请先核对并确认已查看证明材料';
+        return;
+      }
       if (decision === 'REJECTED' && !this.comment.trim()) {
         this.error = '请先填写驳回原因';
         return;
       }
-      if (!window.confirm(`确定${decision === 'APPROVED' ? '通过' : '驳回'}这条演示申请吗？`)) return;
+      if (!window.confirm(`确定${decision === 'APPROVED' ? '通过' : '驳回'}这条申请吗？`)) return;
       this.saving = true;
       this.error = '';
       try {
@@ -196,4 +205,8 @@ textarea { width: 100%; box-sizing: border-box; border: 1px solid #d6e2d7; borde
 button:disabled { opacity: .5; cursor: not-allowed; }
 @media (max-width: 800px) { .review-page { padding: 18px 14px; } .information { grid-template-columns: repeat(2, minmax(0,1fr)); } }
 @media (max-width: 520px) { .review-header { flex-direction: column; } .information { grid-template-columns: 1fr; } }
+.proof-link { color: #32644c; text-decoration: underline; }
+.proof-confirm { display: flex !important; align-items: center; gap: 8px; font-size: 13px; color: #4d654e; margin: 8px 0; }
+.proof-confirm input { width: auto; }
 </style>
+

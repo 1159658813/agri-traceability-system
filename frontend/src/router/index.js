@@ -15,18 +15,31 @@ const FarmerReview = () => import(
     /* webpackChunkName: "manage-pages" */
     '../views/FarmerReview.vue'
     );
+const FarmerApply = () => import(
+    /* webpackChunkName: "public-pages" */
+    '../views/public/FarmerApply.vue'
+    );
+const FarmerWorkspace = () => import(
+    /* webpackChunkName: "farmer-pages" */
+    '../views/FarmerWorkspace.vue'
+    );
 
 Vue.use(VueRouter);
 
 const router = new VueRouter({
   mode:'history',
   routes:[
+    {
+      path: '/farmer',
+      name: 'FarmerWorkspace',
+      component: FarmerWorkspace
+    },
     {path:'/',component:PublicLayout,children:[
       {path:'',name:'public-home',component:Home},
       {path:'search',name:'public-search',component:Search},
       {path:'notices',name:'notices',component:Notices},
       {path:'notices/:id',name:'notice-detail',component:Notices},
-      {path:'farmer-apply',name:'farmer-apply',component:ComingSoon},
+      {path:'farmer-apply',name:'farmer-apply',component:FarmerApply},
       {path:'login',name:'login',component:Login}
     ]},
     {path:'/manage',component:AppShell,meta:{devOnly:true},children:[

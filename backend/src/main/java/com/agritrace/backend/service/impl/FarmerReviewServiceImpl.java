@@ -12,9 +12,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class FarmerReviewServiceImpl implements FarmerReviewService {
     private final FarmerReviewMapper mapper;
+    private final com.agritrace.backend.service.PrivateProofStorage proofStorage;
 
-    public FarmerReviewServiceImpl(FarmerReviewMapper mapper) {
+    public FarmerReviewServiceImpl(FarmerReviewMapper mapper,
+                                   com.agritrace.backend.service.PrivateProofStorage proofStorage) {
         this.mapper = mapper;
+        this.proofStorage = proofStorage;
     }
 
     @Override
@@ -52,11 +55,14 @@ public class FarmerReviewServiceImpl implements FarmerReviewService {
         if (!"PENDING".equals(application.getReviewStatus())) {
             throw new ReviewProblem(409, "这条申请已经处理，请刷新列表");
         }
-        // 真实证照上传、核验尚未上线；本阶段只允许审核明确标记的演示记录。
-        if (!"DEMO_PLACEHOLDER".equals(application.getProofType())
-                || application.getProofFilePath() == null
-                || !application.getProofFilePath().startsWith("DEMO_ONLY/NO_REAL_FILE/")) {
-            throw new ReviewProblem(409, "真实资质材料审核尚未开放，目前仅支持演示申请");
+        boolean demo = "DEMO_PLACEHOLDER".equals(application.getProofType())
+                && application.getProofFilePath() != null
+                && application.getProofFilePath().startsWith("DEMO_ONLY/NO_REAL_FILE/");
+        boolean realFile = java.util.Set.of("BUSINESS_LICENSE", "LAND_CONTRACT", "OTHER_PROOF")
+                .contains(application.getProofType())
+                && proofStorage.exists(application.getProofFilePath());
+        if (!demo && !realFile) {
+            throw new ReviewProblem(409, "资质文件缺失或格式无效，不能完成审核");
         }
         FarmerAccountLock farmer = mapper.lockFarmer(application.getApplicantId());
         if (farmer == null || !"FARMER".equals(farmer.getRoleCode())

@@ -25,19 +25,18 @@ public class AuthServiceImpl implements AuthService {
                 || password == null || password.isBlank() || password.length() > 128) {
             return null;
         }
-
         AuthAccount account = userMapper.findByUsername(username.trim());
         String hash = account == null ? unusedHash : account.getPasswordHash();
         boolean validPassword = hash != null && passwordEncoder.matches(password, hash);
         if (account == null || !validPassword || !Integer.valueOf(1).equals(account.getStatus())) {
             return null;
         }
-
-        if (!"ADMIN".equals(account.getRoleCode())) {
+        String role = account.getRoleCode();
+        if (!"ADMIN".equals(role) && !"FARMER".equals(role)) {
             return null;
         }
         return new LoginUser(account.getId(), account.getUsername(),
-                account.getDisplayName(), account.getRoleCode());
+                account.getDisplayName(), role);
     }
 
     @Override
