@@ -45,6 +45,9 @@
           <p v-if="item.remark" class="remark">{{ item.remark }}</p>
           <p class="meta">溯源码：{{ item.traceCode }}（尚未发布时不可对游客查询）</p>
           <div class="actions">
+            <router-link :to="`/farmer/batches/${item.id}/records`">
+              农事与采收记录
+            </router-link>
             <button v-if="canEdit(item)" type="button" @click="openEdit(item)">编辑草稿</button>
             <button v-if="item.status === 'DRAFT'" type="button" class="primary"
                     :disabled="submittingId === item.id" @click="submit(item)">

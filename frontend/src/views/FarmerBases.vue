@@ -42,11 +42,32 @@
         <div class="dialog-heading"><h2>{{ editId ? '编辑基地' : '新增基地' }}</h2><button type="button" @click="closeForm">关闭</button></div>
         <form @submit.prevent="save">
           <label>基地名称 <input v-model.trim="form.baseName" maxlength="100" required /></label>
-          <div class="two">
-            <label>省份 <input v-model.trim="form.province" maxlength="50" required /></label>
-            <label>城市 <input v-model.trim="form.city" maxlength="50" required /></label>
+          <div class="region-fields">
+            <label>省份
+              <select v-model="form.province" required @change="onProvinceChange">
+                <option value="" disabled>请选择省份</option>
+                <option v-for="item in provinces" :key="item.code || item.name" :value="item.name">
+                  {{ item.name }}{{ item.legacy ? '（原记录）' : '' }}
+                </option>
+              </select>
+            </label>
+            <label>城市
+              <select v-model="form.city" required :disabled="!form.province" @change="onCityChange">
+                <option value="" disabled>请选择城市</option>
+                <option v-for="item in cities" :key="item.code || item.name" :value="item.name">
+                  {{ item.name }}{{ item.legacy ? '（原记录）' : '' }}
+                </option>
+              </select>
+            </label>
+            <label>区县
+              <select v-model="form.district" :disabled="!form.city" :required="districts.length > 0">
+                <option value="">{{ districts.length ? '请选择区县' : '暂无区县选项' }}</option>
+                <option v-for="item in districts" :key="item.code || item.name" :value="item.name">
+                  {{ item.name }}{{ item.legacy ? '（原记录）' : '' }}
+                </option>
+              </select>
+            </label>
           </div>
-          <label>区县 <input v-model.trim="form.district" maxlength="50" /></label>
           <label>详细地址 <input v-model.trim="form.address" maxlength="255" required /></label>
           <label>种植面积（亩）<input v-model="form.areaMu" type="number" min="0" max="99999999.99" step="0.01" placeholder="选填" /></label>
           <label>基地介绍 <textarea v-model.trim="form.description" rows="3" maxlength="500" /></label>
@@ -61,6 +82,19 @@
 <script>
 import { currentUser } from '../api/auth';
 import { listFarmerBases, createFarmerBase, updateFarmerBase, setFarmerBaseStatus } from '../api/farmerBases';
+import { areaList } from '@vant/area-data';
+
+const toOptions = entries => Object.entries(entries).map(([code, name]) => ({ code, name }));
+const provinceData = toOptions(areaList.province_list);
+const cityData = toOptions(areaList.city_list);
+const districtData = toOptions(areaList.county_list);
+
+// 历史记录可能使用旧行政区名称：编辑时保留原值，避免无意清空。
+const keepOldValue = (options, value) => {
+  if (!value || options.some(item => item.name === value)) return options;
+  return [...options, { code: '', name: value, legacy: true }];
+};
+
 
 const blank = () => ({ baseName: '', province: '', city: '', district: '', address: '', areaMu: '', description: '' });
 
@@ -70,8 +104,34 @@ export default {
     return { account: null, loading: true, saving: false, editing: false, editId: null,
       form: blank(), formError: '', error: '', page: { total: 0, pageNum: 1, pageSize: 10, records: [] } };
   },
+  computed: {
+    provinces() {
+      return keepOldValue(provinceData, this.form.province);
+    },
+    cities() {
+      const province = provinceData.find(item => item.name === this.form.province);
+      const options = province
+        ? cityData.filter(item => item.code.startsWith(province.code.slice(0, 2)))
+        : [];
+      return keepOldValue(options, this.form.city);
+    },
+    districts() {
+      const city = this.cities.find(item => item.name === this.form.city);
+      const options = city && city.code
+        ? districtData.filter(item => item.code.startsWith(city.code.slice(0, 4)))
+        : [];
+      return keepOldValue(options, this.form.district);
+    }
+  },
   mounted() { this.start(); },
   methods: {
+    onProvinceChange() {
+      this.form.city = '';
+      this.form.district = '';
+    },
+    onCityChange() {
+      this.form.district = '';
+    },
     async start() {
       try {
         this.account = await currentUser();
@@ -101,6 +161,9 @@ export default {
       if (this.saving) return;
       this.formError = ''; this.saving = true;
       try {
+        if (!this.form.province || !this.form.city || (this.districts.length && !this.form.district)) {
+          throw new Error('请完整选择省、市、区县');
+        }
         const form = { ...this.form, areaMu: this.form.areaMu === '' ? null : Number(this.form.areaMu) };
         if (form.areaMu !== null && (!Number.isFinite(form.areaMu) || form.areaMu < 0)) {
           throw new Error('种植面积不正确');
@@ -133,6 +196,6 @@ export default {
 button { cursor: pointer; font: inherit; border-radius: 8px; border: 1px solid #cbdcca; background: white; padding: 10px 15px; color: #315a43; }button:disabled { opacity: .6; cursor: not-allowed; }.primary { background: #234a3c; border-color: #234a3c; color: #fff; font-weight: 600; }
 .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 24px; }.base-card { padding: 23px; background: #fff; border: 1px solid #e2e9de; border-radius: 12px; }.card-head h2 { font-size: 20px; margin: 0 0 8px; }.card-head p, .detail { color: #758d78; font-size: 13px; }.address { font-size: 14px; }.tag { white-space: nowrap; border-radius: 20px; padding: 6px 10px; font-size: 12px; }.active { color: #326347; background: #e5f2e5; }.inactive { color: #916c3d; background: #f6f0e5; }.actions { display: flex; gap: 10px; margin-top: 18px; }.actions button { font-size: 13px; padding: 8px 12px; }
 .pager { display: flex; align-items: center; justify-content: end; gap: 10px; margin-top: 22px; }.note { font-size: 13px; color: #8a9e8d; margin-top: 20px; }.empty { background: #fff; border: 1px solid #e2e9de; border-radius: 12px; text-align: center; padding: 55px 20px; margin-top: 24px; }.alert { background: #fff0ed; color: #954c45; padding: 12px; border-radius: 8px; margin-top: 18px; }
-.overlay { position: fixed; z-index: 20; inset: 0; background: rgba(23, 48, 32, .45); display: grid; place-items: center; padding: 16px; }.dialog { background: #fff; padding: 24px; width: 100%; max-width: 600px; border-radius: 13px; max-height: 90vh; overflow: auto; box-sizing: border-box; }.dialog-heading h2 { margin: 0; }.dialog form { display: grid; gap: 14px; margin-top: 24px; }.dialog label { display: grid; gap: 8px; font-size: 14px; }.dialog input, .dialog textarea { padding: 11px; font: inherit; color: #234a3c; border: 1px solid #d3ded3; border-radius: 8px; width: 100%; box-sizing: border-box; }.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-@media(max-width:700px) { .bar,.heading { flex-wrap:wrap; }.cards,.two { grid-template-columns: 1fr; }.container { padding: 24px 14px; } }
+.overlay { position: fixed; z-index: 20; inset: 0; background: rgba(23, 48, 32, .45); display: grid; place-items: center; padding: 16px; }.dialog { background: #fff; padding: 24px; width: 100%; max-width: 600px; border-radius: 13px; max-height: 90vh; overflow: auto; box-sizing: border-box; }.dialog-heading h2 { margin: 0; }.dialog form { display: grid; gap: 14px; margin-top: 24px; }.dialog label { display: grid; gap: 8px; font-size: 14px; }.dialog input, .dialog select, .dialog textarea { padding: 11px; font: inherit; color: #234a3c; border: 1px solid #d3ded3; border-radius: 8px; width: 100%; box-sizing: border-box; }.region-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }.dialog select { background: #fff; cursor: pointer; }.dialog select:disabled { color: #8b9b90; background: #f4f6f3; cursor: not-allowed; }
+@media(max-width:700px) { .bar,.heading { flex-wrap:wrap; }.cards,.region-fields { grid-template-columns: 1fr; }.container { padding: 24px 14px; } }
 </style>

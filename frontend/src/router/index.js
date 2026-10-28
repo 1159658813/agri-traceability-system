@@ -23,6 +23,26 @@ const FarmerWorkspace = () => import(
     /* webpackChunkName: "farmer-pages" */
     '../views/FarmerWorkspace.vue'
     );
+const FarmerBases = () => import(
+    /* webpackChunkName: "farmer-pages" */
+    '../views/FarmerBases.vue'
+    );
+const FarmerProducts = () => import(
+    /* webpackChunkName: "farmer-pages" */
+    '../views/FarmerProducts.vue'
+    );
+const FarmerBatches = () => import(
+    /* webpackChunkName: "farmer-pages" */
+    '../views/FarmerBatches.vue'
+    );
+const AdminBatchReview = () => import(
+    /* webpackChunkName: "manage-pages" */
+    '../views/AdminBatchReview.vue'
+    );
+const FarmerRecords = () => import(
+    /* webpackChunkName: "farmer-pages" */
+    '../views/FarmerRecords.vue'
+    );
 
 Vue.use(VueRouter);
 
@@ -33,6 +53,26 @@ const router = new VueRouter({
       path: '/farmer',
       name: 'FarmerWorkspace',
       component: FarmerWorkspace
+    },
+    {
+      path: '/farmer/bases',
+      name: 'FarmerBases',
+      component: FarmerBases
+    },
+    {
+      path: '/farmer/products',
+      name: 'FarmerProducts',
+      component: FarmerProducts
+    },
+    {
+      path: '/farmer/batches',
+      name: 'FarmerBatches',
+      component: FarmerBatches
+    },
+    {
+      path: '/farmer/batches/:batchId/records',
+      name: 'FarmerRecords',
+      component: FarmerRecords
     },
     {path:'/',component:PublicLayout,children:[
       {path:'',name:'public-home',component:Home},
@@ -50,6 +90,11 @@ const router = new VueRouter({
           path: 'farmer-applications',
           name: 'FarmerApplications',
           component: FarmerReview
+        },
+        {
+          path: 'batch-reviews',
+          name: 'AdminBatchReviews',
+          component: AdminBatchReview
         },
     ]},
     {path:'/bases',redirect:'/manage/bases'},

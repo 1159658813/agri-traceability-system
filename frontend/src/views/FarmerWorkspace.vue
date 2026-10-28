@@ -8,9 +8,15 @@
       <p class="group-title">工作空间</p>
       <router-link class="nav-current" to="/farmer">工作台概览</router-link>
       <p class="group-title">溯源业务</p>
-      <span class="nav-disabled">种植基地 <small>后续开放</small></span>
-      <span class="nav-disabled">农产品档案 <small>后续开放</small></span>
-      <span class="nav-disabled">溯源批次 <small>后续开放</small></span>
+      <router-link class="nav-current" to="/farmer/bases">
+        种植基地
+      </router-link>
+      <router-link class="nav-current" to="/farmer/products">
+        农产品档案
+      </router-link>
+      <router-link class="nav-current" to="/farmer/batches">
+        溯源批次
+      </router-link>
       <span class="nav-disabled">农事与采收 <small>后续开放</small></span>
     </aside>
 

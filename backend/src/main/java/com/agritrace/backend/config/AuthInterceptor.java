@@ -50,9 +50,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         }
 
         if (path.startsWith("/api/farmer/")) {
-            if (!"FARMER".equals(user.roleCode())
-                    || !"/api/farmer/overview".equals(path)
-                    || !"GET".equalsIgnoreCase(method)) {
+            if (!"FARMER".equals(user.roleCode()) || !allowedFarmerPath(path, method)) {
                 writeError(response, 403, "当前账号没有操作权限");
                 return false;
             }
@@ -69,6 +67,67 @@ public class AuthInterceptor implements HandlerInterceptor {
             return false;
         }
         return true;
+    }
+
+    private boolean allowedFarmerPath(String path, String method) {
+        if ("GET".equals(method) && "/api/farmer/overview".equals(path)) return true;
+        if ("/api/farmer/bases".equals(path)) {
+            return "GET".equals(method) || "POST".equals(method);
+        }
+        if (path.matches("/api/farmer/bases/[1-9][0-9]*")) {
+            return "GET".equals(method) || "PUT".equals(method);
+        }
+        if (path.matches("/api/farmer/bases/[1-9][0-9]*/status")) {
+            return "PUT".equals(method);
+        }
+        if ("GET".equals(method)
+                && "/api/farmer/products/categories".equals(path)) {
+            return true;
+        }
+
+        if ("/api/farmer/products".equals(path)) {
+            return "GET".equals(method) || "POST".equals(method);
+        }
+
+        if (path.matches("/api/farmer/products/[1-9][0-9]*")) {
+            return "GET".equals(method) || "PUT".equals(method);
+        }
+
+        if (path.matches("/api/farmer/products/[1-9][0-9]*/status")) {
+            return "PUT".equals(method);
+        }
+        if ("GET".equals(method)
+                && "/api/farmer/batches/options".equals(path)) {
+            return true;
+        }
+
+        if ("/api/farmer/batches".equals(path)) {
+            return "GET".equals(method) || "POST".equals(method);
+        }
+
+        if (path.matches("/api/farmer/batches/[1-9][0-9]*")) {
+            return "GET".equals(method) || "PUT".equals(method);
+        }
+
+        if (path.matches("/api/farmer/batches/[1-9][0-9]*/submit")) {
+            return "POST".equals(method);
+        }
+
+        if (path.matches("/api/farmer/batches/[1-9][0-9]*/records")) {
+            return "GET".equals(method);
+        }
+
+        if (path.matches("/api/farmer/batches/[1-9][0-9]*/records/(farm|harvest)")) {
+            return "POST".equals(method);
+        }
+
+        if (path.matches("/api/farmer/batches/[1-9][0-9]*/records/(farm|harvest)/[1-9][0-9]*")) {
+            return "PUT".equals(method);
+        }
+
+
+
+        return false;
     }
 
     private void writeError(HttpServletResponse response, int status, String message)
