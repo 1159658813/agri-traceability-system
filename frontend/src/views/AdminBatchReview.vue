@@ -139,7 +139,7 @@
 
 <script>
 import { currentUser } from '../api/auth';
-import { getAdminBatches, getAdminBatchCompleteness, reviewBatch } from '../../../../../../Downloads/tianye_v13_admin_completeness_ui_manual/reference_modified/frontend/src/api/adminBatches';
+import { getAdminBatches, getAdminBatchCompleteness, reviewBatch } from '../api/adminBatches';
 
 export default {
   name: 'AdminBatchReview',
