@@ -67,6 +67,10 @@
             </article>
           </div>
         </section>
+        <QualityCirculationRecords
+            :batch-id="batchId"
+            :editable="Boolean(editable)"
+        />
       </template>
     </main>
 
@@ -120,6 +124,7 @@
 
 <script>
 import { currentUser } from '../api/auth';
+import QualityCirculationRecords from './components/QualityCirculationRecords.vue';
 import { getBatchRecords, addFarmWork, editFarmWork, addHarvest, editHarvest } from '../api/farmerRecords';
 
 const emptyFarm = () => ({ operationType: '', operatedAt: '', description: '', operatorName: '' });
@@ -127,6 +132,7 @@ const emptyHarvest = () => ({ harvestedAt: '', quantityKg: '', grade: '', remark
 
 export default {
   name: 'FarmerRecords',
+  components: { QualityCirculationRecords },
   data() {
     return {
       account: null, batch: null, farmRecords: [], harvestRecords: [],

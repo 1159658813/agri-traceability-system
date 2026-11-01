@@ -112,16 +112,18 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (path.matches("/api/farmer/batches/[1-9][0-9]*/submit")) {
             return "POST".equals(method);
         }
-
+        if (path.matches("/api/farmer/batches/[1-9][0-9]*/records/extended")) {
+            return "GET".equals(method);
+        }
         if (path.matches("/api/farmer/batches/[1-9][0-9]*/records")) {
             return "GET".equals(method);
         }
 
-        if (path.matches("/api/farmer/batches/[1-9][0-9]*/records/(farm|harvest)")) {
+        if (path.matches("/api/farmer/batches/[1-9][0-9]*/records/(farm|harvest|quality|circulation)")) {
             return "POST".equals(method);
         }
 
-        if (path.matches("/api/farmer/batches/[1-9][0-9]*/records/(farm|harvest)/[1-9][0-9]*")) {
+        if (path.matches("/api/farmer/batches/[1-9][0-9]*/records/(farm|harvest|quality|circulation)/[1-9][0-9]*")) {
             return "PUT".equals(method);
         }
 
