@@ -10,8 +10,8 @@
     </header>
 
     <div class="notice">
-      当前仅允许发布产品、基地和备注均标记“【演示】”的测试批次。
-      演示发布不代表资料真实或质检合格；真实批次需等待过程记录及正式审核规则完善。
+      仅允许明确标记“【演示】”且通过资料完整性、质检状态校验的测试批次发布。
+      演示发布不代表报告真实或产品质量合格；正式批次仍需独立的材料核验流程。
     </div>
 
     <div class="toolbar">
@@ -51,6 +51,51 @@
         </p>
         <p class="fine-print">以上为录入条数，不代表材料经过核验。</p>
 
+        <div class="completeness-controls">
+          <button type="button" class="plain-button" :aria-expanded="reportBatchId === item.id"
+                  @click="toggleCompleteness(item)">
+            {{ reportBatchId === item.id ? '收起完整性评分' : '查看完整性评分' }}
+          </button>
+          <span v-if="reportBatchId === item.id && reportLoading" class="fine-print">正在计算评分...</span>
+        </div>
+        <section v-if="reportBatchId === item.id" class="completeness-report" aria-label="资料完整性评分">
+          <p v-if="reportError" class="error" role="alert">{{ reportError }}</p>
+          <template v-else-if="report && report.batchId === item.id">
+            <div class="completeness-head">
+              <div>
+                <strong class="completeness-score">{{ report.score }}<small> / {{ report.maxScore }} 分</small></strong>
+                <p class="fine-print">依据数据库当前启用的六项完整性规则计算</p>
+              </div>
+              <span class="review-eligibility" :class="{ eligible: report.readyForDemoReview }">
+                {{ item.status !== 'SUBMITTED' ? '历史批次 · 仅供查看' :
+                  (report.readyForDemoReview && item.demoEligible ? '满足当前演示审核条件' : '暂不满足演示发布条件') }}
+              </span>
+            </div>
+            <div class="score-track" role="progressbar" :aria-valuenow="Number(report.score)"
+                 :aria-valuemin="0" :aria-valuemax="Number(report.maxScore)" aria-label="完整性得分">
+              <div class="score-fill" :style="{ width: scorePercent(report) + '%' }"></div>
+            </div>
+            <div class="completeness-rules">
+              <div v-for="rule in report.rules" :key="rule.key" class="completeness-rule">
+                <span>{{ rule.name }}</span>
+                <span :class="rule.filled ? 'rule-filled' : 'rule-missing'">
+                  {{ rule.filled ? '已登记' : '待补全' }} · {{ rule.filled ? rule.weight : 0 }}/{{ rule.weight }} 分
+                </span>
+              </div>
+            </div>
+            <div v-if="report.missingItems && report.missingItems.length" class="report-alert">
+              <strong>缺失资料</strong>
+              <ul><li v-for="(missing, index) in report.missingItems" :key="index">{{ missing }}</li></ul>
+            </div>
+            <div v-if="report.warnings && report.warnings.length" class="report-warning">
+              <strong>资料与质检提示</strong>
+              <ul><li v-for="(warning, index) in report.warnings" :key="index">{{ warning }}</li></ul>
+            </div>
+            <p class="fine-print">规则版本：{{ report.ruleVersion }}。评分不是检测认证，也不替代管理员审核。</p>
+          </template>
+          <p v-else-if="reportLoading" class="fine-print">正在读取数据库评分...</p>
+        </section>
+
         <div v-if="item.status === 'SUBMITTED'" class="review-actions">
           <template v-if="editingId === item.id">
             <label :for="`batch-comment-${item.id}`">审核意见</label>
@@ -61,9 +106,14 @@
               我确认这是演示批次，仅用于系统开发测试，不代表真实质检认证
             </label>
             <p v-else class="fine-print">非演示批次当前仅支持驳回，不能正式发布。</p>
+            <p v-if="item.demoEligible && (!report || !report.readyForDemoReview)" class="fine-print">
+              必须先获取并通过完整性与质检校验，才能进行演示发布；资料不符合要求时仍可驳回。
+            </p>
             <div class="buttons">
               <button v-if="item.demoEligible" type="button" class="approve"
-                      :disabled="saving || !demoConfirmed" @click="submit(item, 'APPROVE')">
+                      :disabled="saving || !demoConfirmed || reportLoading ||
+                                 reportBatchId !== item.id || !report || !report.readyForDemoReview"
+                      @click="submit(item, 'APPROVE')">
                 演示发布
               </button>
               <button type="button" class="reject" :disabled="saving"
@@ -89,7 +139,7 @@
 
 <script>
 import { currentUser } from '../api/auth';
-import { getAdminBatches, reviewBatch } from '../api/adminBatches';
+import { getAdminBatches, getAdminBatchCompleteness, reviewBatch } from '../../../../../../Downloads/tianye_v13_admin_completeness_ui_manual/reference_modified/frontend/src/api/adminBatches';
 
 export default {
   name: 'AdminBatchReview',
@@ -105,6 +155,11 @@ export default {
       editingId: null,
       comment: '',
       demoConfirmed: false,
+      reportBatchId: null,
+      report: null,
+      reportLoading: false,
+      reportError: '',
+      reportSerial: 0,
       error: ''
     };
   },
@@ -128,6 +183,7 @@ export default {
       this.load();
     },
     async load() {
+      this.resetReport();
       this.loading = true;
       this.error = '';
       try {
@@ -145,6 +201,43 @@ export default {
       this.comment = '';
       this.demoConfirmed = false;
       this.error = '';
+      this.openCompleteness(item);
+    },
+    scorePercent(report) {
+      const max = Number(report.maxScore) || 100;
+      const value = Number(report.score) || 0;
+      return Math.max(0, Math.min(100, value / max * 100));
+    },
+    resetReport() {
+      this.reportSerial += 1;
+      this.reportBatchId = null;
+      this.report = null;
+      this.reportLoading = false;
+      this.reportError = '';
+    },
+    toggleCompleteness(item) {
+      if (this.reportBatchId === item.id) {
+        this.resetReport();
+        return;
+      }
+      this.openCompleteness(item);
+    },
+    async openCompleteness(item) {
+      const serial = ++this.reportSerial;
+      this.reportBatchId = item.id;
+      this.report = null;
+      this.reportError = '';
+      this.reportLoading = true;
+      try {
+        const result = await getAdminBatchCompleteness(item.id);
+        if (this.reportSerial !== serial) return;
+        if (!result || result.batchId !== item.id) throw new Error('评分结果与当前批次不一致');
+        this.report = result;
+      } catch (error) {
+        if (this.reportSerial === serial) this.reportError = error.message || '读取评分失败';
+      } finally {
+        if (this.reportSerial === serial) this.reportLoading = false;
+      }
     },
     async submit(item, decision) {
       if (this.saving) return;
@@ -154,6 +247,11 @@ export default {
       }
       if (decision === 'APPROVE' && (!item.demoEligible || !this.demoConfirmed)) {
         this.error = '请确认本次仅发布演示批次';
+        return;
+      }
+      if (decision === 'APPROVE' && (this.reportBatchId !== item.id ||
+          !this.report || !this.report.readyForDemoReview || this.reportLoading)) {
+        this.error = '当前完整性或质检状态不满足演示发布条件，请刷新评分';
         return;
       }
       const prompt = decision === 'APPROVE'
@@ -212,6 +310,24 @@ dd { margin: 0; overflow-wrap: anywhere; }
 .remark { background: #f7f8f4; border-radius: 8px; padding: 10px 13px; }
 .record-summary { margin-bottom: 0; }
 .fine-print { font-size: 12px; margin-top: 4px; }
+/* 管理员完整性报告：沿用既有森林绿与暖白色视觉 */
+.completeness-controls { display: flex; align-items: center; gap: 12px; margin-top: 17px; }
+.completeness-report { margin-top: 12px; padding: 17px; border: 1px solid #dfebdf; border-radius: 11px; background: #fafbf8; }
+.completeness-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.completeness-score { color: #244d3d; font-size: 28px; }
+.completeness-score small { font-size: 14px; font-weight: normal; }
+.review-eligibility { font-size: 12px; color: #96642d; background: #f5eee1; border-radius: 8px; padding: 7px 10px; }
+.review-eligibility.eligible { color: #286246; background: #e5f1e8; }
+.score-track { height: 9px; margin: 12px 0 16px; border-radius: 99px; background: #e6ede6; overflow: hidden; }
+.score-fill { height: 100%; background: #356b4f; border-radius: inherit; transition: width .2s; }
+.completeness-rules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.completeness-rule { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px; border: 1px solid #e4ebe3; border-radius: 7px; background: #fff; font-size: 13px; }
+.rule-filled { color: #27704a; white-space: nowrap; }
+.rule-missing { color: #a05c3d; white-space: nowrap; }
+.report-alert, .report-warning { margin-top: 13px; padding: 12px 14px; border-radius: 8px; font-size: 13px; line-height: 1.7; }
+.report-alert { background: #fdf0ec; color: #a0463d; }
+.report-warning { background: #f7f1e5; color: #84602e; }
+.report-alert ul, .report-warning ul { margin: 6px 0 0; padding-left: 20px; }
 .review-actions { border-top: 1px solid #e8ece5; margin-top: 18px; padding-top: 17px; }
 .review-actions label:not(.confirm-demo) { display: block; }
 .confirm-demo { display: flex; align-items: flex-start; gap: 8px; line-height: 1.7; margin-bottom: 14px; }
@@ -221,5 +337,6 @@ dd { margin: 0; overflow-wrap: anywhere; }
 .error { color: #a43e36; background: #fff0ed; padding: 12px; border-radius: 8px; }
 .empty { text-align: center; padding: 75px 14px; color: #80978b; background: #fff; border: 1px solid #e1e8df; border-radius: 13px; }
 .pager { justify-content: flex-end; margin-top: 18px; color: #678273; }
-@media (max-width: 750px) { .batch-review-page { padding: 20px 14px; } .page-header { flex-direction: column; } .details { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 750px) { .batch-review-page { padding: 20px 14px; } .page-header, .completeness-head { flex-direction: column; align-items: flex-start; } .details, .completeness-rules { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .completeness-rules { grid-template-columns: 1fr; } }
 </style>

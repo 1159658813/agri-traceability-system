@@ -15,6 +15,10 @@ export function getAdminBatches(status, pageNum = 1, pageSize = 10) {
   const query = new URLSearchParams({ status, pageNum, pageSize });
   return request(`?${query}`);
 }
+export function getAdminBatchCompleteness(batchId) {
+  const query = new URLSearchParams({ completenessBatchId: String(batchId) });
+  return request(`?${query}`);
+}
 
 export function reviewBatch(id, decision, comment, csrfToken) {
   return request(`/${id}/review`, {

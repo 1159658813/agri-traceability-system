@@ -10,6 +10,8 @@ public class CompletenessFacts {
     private int circulationCount;
     private int pendingQualityCount;
     private int failedQualityCount;
+    private int passedQualityCount;
+
 
     public String getBatchStatus() { return batchStatus; }
     public void setBatchStatus(String batchStatus) { this.batchStatus = batchStatus; }
@@ -28,5 +30,8 @@ public class CompletenessFacts {
     public int getPendingQualityCount() { return pendingQualityCount; }
     public void setPendingQualityCount(int pendingQualityCount) { this.pendingQualityCount = pendingQualityCount; }
     public int getFailedQualityCount() { return failedQualityCount; }
+    public int getPassedQualityCount() { return passedQualityCount; }
+    public void setPassedQualityCount(int passedQualityCount) { this.passedQualityCount = passedQualityCount; }
+
     public void setFailedQualityCount(int failedQualityCount) { this.failedQualityCount = failedQualityCount; }
 }
