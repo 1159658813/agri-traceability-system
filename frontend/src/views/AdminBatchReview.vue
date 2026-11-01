@@ -96,6 +96,8 @@
           <p v-else-if="reportLoading" class="fine-print">正在读取数据库评分...</p>
         </section>
 
+        <AdminBatchHistory :batch-id="item.id" />
+
         <div v-if="item.status === 'SUBMITTED'" class="review-actions">
           <template v-if="editingId === item.id">
             <label :for="`batch-comment-${item.id}`">审核意见</label>
@@ -140,9 +142,11 @@
 <script>
 import { currentUser } from '../api/auth';
 import { getAdminBatches, getAdminBatchCompleteness, reviewBatch } from '../api/adminBatches';
+import AdminBatchHistory from './components/AdminBatchHistory.vue';
 
 export default {
   name: 'AdminBatchReview',
+  components: { AdminBatchHistory },
   data() {
     return {
       status: 'SUBMITTED',
